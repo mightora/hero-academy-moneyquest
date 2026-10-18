@@ -271,7 +271,30 @@ function startLevel(id) {
     };
     return;
   }
+  if (id === 0 && !p.started) {
+    renderTrailIntro(l);
+    return;
+  }
   renderLesson(l, replay);
+}
+function renderTrailIntro(l) {
+  openDialog(
+    "Welcome to the Lantern Trail",
+    `<section class="lesson-flow intro-flow">
+      <div class="lesson-pip"><div class="lesson-robot">${robot()}</div><div><p class="eyebrow">BEFORE YOUR FIRST STOP</p><h2>Let's learn the trail!</h2><p>These are pretend coins. Practise with Pip before making each money choice.</p></div></div>
+      <div class="intro-cards">
+        <div class="lesson-picture"><div class="lesson-picture-icon">${icon("wallet")}</div><strong>Wallet</strong><span>Coins for now</span></div>
+        <div class="lesson-picture"><div class="lesson-picture-icon">${icon("jar")}</div><strong>Savings</strong><span>Coins for later</span></div>
+        <div class="lesson-picture"><div class="lesson-picture-icon">${icon("tent")}</div><strong>Days</strong><span>Food and camp cost 2 coins each day</span></div>
+      </div>
+      <p class="notice">Pip teaches you first. Then you practise. Then you make your choice. You can always ask for help.</p>
+      <div class="dialog-actions lesson-actions"><button class="btn light" id="intro-hear">${icon("speaker")} Hear</button><button class="btn orange" id="intro-go">Learn with Pip ${icon("arrow")}</button></div>
+      <p class="muted">This is a game, not real pocket money. Trying again never loses coins or XP.</p>
+    </section>`,
+  );
+  dialog.querySelector("#intro-hear").onclick = () =>
+    hear("Welcome to the Lantern Trail! Wallet means coins for now. Savings are coins for later. Each game day costs two pretend coins for food and camp. Pip teaches you, then you practise, then you choose. You can always ask for help.");
+  dialog.querySelector("#intro-go").onclick = () => renderLesson(l, false);
 }
 function renderLesson(l, replay) {
   const lesson = getLesson(l.id);
