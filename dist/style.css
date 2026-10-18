@@ -44,3 +44,8 @@
  .lesson-answer{padding:12px;min-height:52px}
  .lesson-actions .btn{flex:1}
 }
+
+.intro-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin:20px 0}
+.intro-cards .lesson-picture{justify-content:flex-start}
+.intro-cards .lesson-picture span{font-size:calc(13px * var(--scale));line-height:1.4}
+@media(max-width:520px){.intro-cards{grid-template-columns:1fr;gap:8px}.intro-cards .lesson-picture{flex-direction:row;text-align:left;padding:9px 12px;gap:11px}.intro-cards .lesson-picture-icon{flex:0 0 45px;margin:0}.intro-cards .lesson-picture strong{min-width:68px}.intro-cards .lesson-picture span{flex:1}}
