@@ -12,7 +12,7 @@ For roughly ages 7–11, with adult support for younger children. Topics include
 
 ## Learn, practise, then play
 
-Every one of the 20 financial decision stops now opens a short illustrated concept lesson **before** the decision. Pip introduces the idea with a pair of visual examples and an optional Hear lesson button. A three-option, no-penalty check gives gentle help for wrong answers; a correct choice unlocks the actual stop. Practice never changes the wallet, savings, time, XP or cloud saves. Returning to a completed money stop repeats the lesson before replaying choices. The ten action stops continue as before.
+A new journey first introduces the pretend wallet, savings jar and daily food/camp costs. Every one of the 20 financial decision stops then opens a short illustrated concept lesson **before** the decision. Pip introduces the idea with a pair of visual examples and an optional Hear lesson button. A three-option, no-penalty check gives gentle help for wrong answers; a correct choice unlocks the actual stop. Practice never changes the wallet, savings, time, XP or cloud saves. Returning to a completed money stop repeats the lesson before replaying choices. The ten action stops continue as before.
 
 The lessons are independent of save-format version 1; no database migration is required. The lesson module is pre-cached for offline journeys. Run `npm test` and `npm run check` before deployment. On real iPhones and iPads, verify the learning dialog fits at 1.3x text size, VoiceOver navigation, optional speech and touch focus.
 
