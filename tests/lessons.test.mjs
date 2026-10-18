@@ -42,9 +42,9 @@ test('the deployed app starts teaching before showing money choices', async () =
   const fs = await import('node:fs/promises');
   const app = await fs.readFile(new URL('../dist/app.js', import.meta.url), 'utf8');
   const sw = await fs.readFile(new URL('../dist/sw.js', import.meta.url), 'utf8');
-  assert.match(app, /if \\(id === 0 && !p\\.started\\) \\{/);
-  assert.match(app, /function renderTrailIntro\\(l\\)/);
-  assert.match(app, /renderLesson\\(l, replay\\);\\s*}\\s*function renderTrailIntro/);
+  assert.match(app, /if \(id === 0 && !p\.started\) \{/);
+  assert.match(app, /function renderTrailIntro\(l\)/);
+  assert.match(app, /renderLesson\(l, replay\);\s*}\s*function renderTrailIntro/);
   assert.match(app, /id="lesson-continue" hidden/);
   assert.match(app, /correct \? "That's it!/);
   assert.match(sw, /'\.\/lessons\.js'/);
