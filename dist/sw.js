@@ -1,5 +1,5 @@
-const CACHE='hero-academy-moneyquest-v4';
-const FILES=['./','./index.html','./style.css','./app.js','./academy-client.js','./academy-client.css','./content.js','./engine.js','./art.js','./hero-art.js','./minigames.js','./sync.js','./icon.svg','./manifest.webmanifest'];
+const CACHE='hero-academy-moneyquest-v5';
+const FILES=['./','./index.html','./style.css','./app.js','./academy-client.js','./academy-client.css','./content.js','./lessons.js','./engine.js','./art.js','./hero-art.js','./minigames.js','./sync.js','./icon.svg','./manifest.webmanifest'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES))));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('hero-academy-moneyquest-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{

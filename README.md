@@ -10,6 +10,12 @@ Wallet, savings, borrowing and time carry through the journey. Each stop takes o
 
 For roughly ages 7–11, with adult support for younger children. Topics include needs and wants, income after expenses, unit prices, fees, recurring costs, repairs, savings, a simplified one-off interest bonus, borrowing, scams, profit, giving and goals. Outcomes are simplified game scenarios, not financial advice, a curriculum certification or an assessment of mastery. The academy provides support if necessary so money shortages do not prevent finishing.
 
+## Learn, practise, then play
+
+A new journey first introduces the pretend wallet, savings jar and daily food/camp costs. Every one of the 20 financial decision stops then opens a short illustrated concept lesson **before** the decision. Pip introduces the idea with a pair of visual examples and an optional Hear lesson button. A three-option, no-penalty check gives gentle help for wrong answers; a correct choice unlocks the actual stop. Practice never changes the wallet, savings, time, XP or cloud saves. Returning to a completed money stop repeats the lesson before replaying choices. The ten action stops continue as before.
+
+The lessons are independent of save-format version 1; no database migration is required. The lesson module is pre-cached for offline journeys. Run `npm test` and `npm run check` before deployment. On real iPhones and iPads, verify the learning dialog fits at 1.3x text size, VoiceOver navigation, optional speech and touch focus.
+
 ## Run and host
 
 No runtime dependencies or build. Serve **dist/** with any static host. ES modules need HTTP(S), so do not open index.html as a file URL. For a local server, run `python3 -m http.server 8000 --directory dist` from this folder and visit http://localhost:8000.
