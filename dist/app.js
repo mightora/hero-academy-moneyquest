@@ -1,4 +1,5 @@
 import { REGIONS, LEVELS, SUITS, EMBLEMS } from "./content.js";
+import { getLesson } from "./lessons.js";
 import {
   fresh,
   settingsDefault,
@@ -141,7 +142,7 @@ function playView() {
     )
     .join(
       "",
-    )}</div>${trailHero(p)}<div class="map-legend"><span><i></i>Your next stop</span><span><i class="green"></i>Explored</span></div></section><aside class="quest-card"><div class="quest-meta"><span>${locked ? "UP AHEAD" : completed ? "EXPLORE AGAIN" : "YOUR NEXT QUEST"}</span><span>${level.number} / 30</span></div><div class="quest-art">${icon(level.type === "play" ? "flag" : level.choices[0].icon)}</div><h2>${esc(level.title)}</h2><p>${esc(locked ? "Keep exploring the trail to reach this stop." : level.question)}</p><div class="quest-type">${icon(level.type === "play" ? "flag" : "wallet")}<span>${level.type === "play" ? "Adventure challenge" : esc(level.concept)}</span></div><button class="btn orange" id="go" ${locked ? "disabled" : ""}>${completed ? "Replay" : p.started ? "Go" : "Play"} ${icon("arrow")}</button></aside></div><section class="journey" aria-label="Choose a region"><div class="journey-header"><strong>Your journey</strong><span>${p.done.length} of 30 stops</span></div><div class="region-tabs">${REGIONS.map(
+    )}</div>${trailHero(p)}<div class="map-legend"><span><i></i>Your next stop</span><span><i class="green"></i>Explored</span></div></section><aside class="quest-card"><div class="quest-meta"><span>${locked ? "UP AHEAD" : completed ? "EXPLORE AGAIN" : "YOUR NEXT QUEST"}</span><span>${level.number} / 30</span></div><div class="quest-art">${icon(level.type === "play" ? "flag" : level.choices[0].icon)}</div><h2>${esc(level.title)}</h2><p>${esc(locked ? "Keep exploring the trail to reach this stop." : level.question)}</p><div class="quest-type">${icon(level.type === "play" ? "flag" : "wallet")}<span>${level.type === "play" ? "Adventure challenge" : esc(level.concept)}</span></div><button class="btn orange" id="go" ${locked ? "disabled" : ""}>${completed ? "Replay" : level.type === "money" ? "Learn & choose" : p.started ? "Go" : "Play"} ${icon("arrow")}</button></aside></div><section class="journey" aria-label="Choose a region"><div class="journey-header"><strong>Your journey</strong><span>${p.done.length} of 30 stops</span></div><div class="region-tabs">${REGIONS.map(
     (r, i) => {
       const d = p.done.filter((id) => Math.floor(id / 6) === i).length;
       return `<button class="region-tab ${region === i ? "active" : ""}" data-region="${i}" ${region === i ? 'aria-current="true"' : ""} aria-label="${esc(r.name)}, ${d} of 6 stops completed"><span class="region-lantern">${lantern(d === 6)}</span><span><strong>${esc(r.name)}</strong><small>${d === 6 ? "✓ Beacon lit" : d + " / 6 stops"}</small></span></button>`;
@@ -270,7 +271,50 @@ function startLevel(id) {
     };
     return;
   }
-  renderChoices(l, replay);
+  renderLesson(l, replay);
+}
+function renderLesson(l, replay) {
+  const lesson = getLesson(l.id);
+  if (!lesson) {
+    toast("Pip could not open this lesson.");
+    return;
+  }
+  openDialog(
+    `Learn · ${l.title}`,
+    `<section class="lesson-flow" aria-label="Learn before making your money choice">
+      <div class="lesson-pip"><div class="lesson-robot">${robot()}</div><div><p class="eyebrow">1 · LEARN</p><h2>${esc(l.concept)}</h2><p>${esc(lesson.explain)}</p></div></div>
+      <div class="lesson-pictures">${lesson.pictures.map(([symbol, label, tag]) => `<div class="lesson-picture"><div class="lesson-picture-icon">${icon(symbol)}</div><strong>${esc(label)}</strong><small>${esc(tag)}</small></div>`).join("")}</div>
+      <div class="lesson-check"><p class="eyebrow">2 · TRY IT</p><h3>${esc(lesson.ask)}</h3>
+      <div class="lesson-answers" role="group" aria-label="Practice your new skill">${lesson.answers.map((answer, i) => `<button class="lesson-answer" type="button" data-lesson-answer="${i}" aria-pressed="false">${esc(answer)}</button>`).join("")}</div>
+      <p class="lesson-feedback" id="lesson-feedback" role="status" aria-live="polite"></p></div>
+      <div class="dialog-actions lesson-actions"><button type="button" class="btn light" id="lesson-hear">${icon("speaker")} Hear lesson</button><button type="button" class="btn orange lesson-next" id="lesson-continue" hidden>3 · ${replay ? "Practise choices" : "Make your choice"} ${icon("arrow")}</button></div>
+      <p class="muted">Practice is free. No coins or XP are won or lost.</p>
+    </section>`,
+  );
+  const feedback = dialog.querySelector("#lesson-feedback");
+  const next = dialog.querySelector("#lesson-continue");
+  const buttons = [...dialog.querySelectorAll("[data-lesson-answer]")];
+  for (const button of buttons) {
+    button.onclick = () => {
+      const answer = Number(button.dataset.lessonAnswer);
+      const correct = answer === lesson.correct;
+      for (const other of buttons) {
+        other.setAttribute("aria-pressed", String(other === button));
+        other.classList.toggle("lesson-correct", correct && other === button);
+      }
+      feedback.textContent = correct ? "That's it! " + lesson.why : "Good try. " + lesson.hint + " Have another go.";
+      feedback.className = correct ? "notice lesson-feedback lesson-right" : "notice hint lesson-feedback";
+      next.hidden = !correct;
+      if (correct) next.focus({ preventScroll: true });
+    };
+  }
+  dialog.querySelector("#lesson-hear").onclick = () =>
+    hear(lesson.explain + " " + lesson.ask + " " + lesson.answers.join(". "));
+  next.onclick = () => {
+    choice = null;
+    helped = false;
+    renderChoices(l, replay);
+  };
 }
 function renderChoices(l, replay) {
   openDialog(
