@@ -676,8 +676,8 @@ try {
       localStorage.getItem("hero-academy-central:moneyquest") || '{"links":{}}',
     ).links?.[p.id];
 } catch {}
-if (centralRequested) {
-  sync.stop();
+if (centralRequested) sync.stop();
+{
   academyAccount = await bootAcademy({
     game: "moneyquest",
     identity: () => p.id,
@@ -730,6 +730,8 @@ if (centralRequested) {
     milestones: () => p.done,
   });
   updateSync();
-} else sync.start();
+}
+if (!academyAccount?.isConnected()) sync.start();
 if ("serviceWorker" in navigator)
   navigator.serviceWorker.register("./sw.js").catch(() => {});
+

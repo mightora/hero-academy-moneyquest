@@ -1,6 +1,6 @@
 // Shared by the static Hero Academy games. Only game-scoped capabilities live here.
 const API = "https://chorequest.heroacademy.app/api/academy";
-const HOME = "https://chorequest.heroacademy.app/academy.html";
+const HOME = "https://heroacademy.app/play/";
 const copy = (v) => JSON.parse(JSON.stringify(v));
 const strip = (value) => {
   const p = copy(value);
@@ -36,6 +36,43 @@ export async function bootAcademy(adapter, platform = globalThis) {
     nextTry = 0;
   const document = platform.document;
   let panel, info, controls, conflict;
+  // Aggregate foreground use into short, retryable chunks. Never collect moves,
+  // answers, browsing history or activity from an unconnected local player.
+  let playIdentity = adapter.identity();
+  let playId = platform.crypto?.randomUUID?.() || "";
+  let lastTick = Date.now(), visible = document?.visibilityState !== "hidden";
+  let engagedMs = 0, attempts = 0, lastCompleted = adapter.milestones().length;
+  function queueUsage(force = false) {
+    const now = Date.now();
+    if (visible) engagedMs += Math.max(0, Math.min(60000, now - lastTick));
+    lastTick = now;
+    const samePlayer = adapter.identity() === playIdentity;
+    const completedNow = samePlayer ? adapter.milestones().length : lastCompleted;
+    const completed = Math.min(100, Math.max(0, completedNow - lastCompleted));
+    const seconds = Math.floor(engagedMs / 1000);
+    if ((force || engagedMs >= 60000) && (seconds || completed || attempts)) {
+      const link = book.links[playIdentity];
+      if (link && !paused && playId && platform.crypto?.randomUUID) {
+        link.activityQueue ||= [];
+        const attempted = Math.min(100, Math.max(attempts, completed));
+        const entry = { event_id: platform.crypto.randomUUID(), play_id: playId,
+          duration_seconds: Math.min(900, seconds), attempted_delta: attempted,
+          completed_delta: completed };
+        if (entry.duration_seconds || attempted) link.activityQueue.push(entry);
+        persist();
+      }
+      engagedMs = 0;
+      attempts = 0;
+      lastCompleted = completedNow;
+    }
+    if (!samePlayer) {
+      playIdentity = adapter.identity();
+      playId = platform.crypto?.randomUUID?.() || "";
+      lastCompleted = adapter.milestones().length;
+      engagedMs = 0;
+      attempts = 0;
+    }
+  }
   const element = (tag, text) => {
     const e = document.createElement(tag);
     if (text !== undefined) e.textContent = text;
@@ -95,12 +132,13 @@ export async function bootAcademy(adapter, platform = globalThis) {
         return;
       }
       nextTry = 0;
+      queueUsage(true);
       await flush();
       if (
         link &&
-        (paused || link.dirty || link.queue.length) &&
+        (paused || link.dirty || link.queue.length || link.activityQueue?.length) &&
         !platform.confirm(
-          "Some progress is still only on this device. Return to ChoreQuest with sync pending? Reopen this game to finish syncing.",
+          "Some progress is still only on this device. Return to Hero Academy with sync pending? Reopen this game to finish syncing.",
         )
       )
         return;
@@ -110,6 +148,7 @@ export async function bootAcademy(adapter, platform = globalThis) {
     sync.type = "button";
     sync.onclick = () => {
       nextTry = 0;
+      queueUsage(true);
       void flush();
     };
     const disconnect = element("button", "Disconnect this game");
@@ -134,10 +173,10 @@ export async function bootAcademy(adapter, platform = globalThis) {
       element("h2", "Which adventure?"),
       element(
         "p",
-        "A saved adventure is available in ChoreQuest. Choose before making more progress. Export a backup in Grown-ups if you want to keep a copy.",
+        "A saved adventure is available in your family account. Choose before making more progress. Export a backup in Grown-ups if you want to keep a copy.",
       ),
     );
-    const cloud = element("button", "Continue ChoreQuest save"),
+    const cloud = element("button", "Continue cloud save"),
       local = element("button", "Keep this device’s adventure"),
       later = element("button", "Play locally for now");
     return new Promise((resolve) => {
@@ -176,7 +215,7 @@ export async function bootAcademy(adapter, platform = globalThis) {
       };
       later.onclick = () => {
         show(
-          "Playing locally. Reopen from ChoreQuest to choose a saved adventure.",
+          "Playing locally. Reopen from Hero Academy to choose a saved adventure.",
         );
         finish();
         resolve(false);
@@ -191,6 +230,7 @@ export async function bootAcademy(adapter, platform = globalThis) {
     });
   }
   async function unlink() {
+    queueUsage(true);
     const link = active();
     if (!link) return;
     if (
@@ -217,12 +257,13 @@ export async function bootAcademy(adapter, platform = globalThis) {
     show("Disconnected. Playing locally.");
   }
   async function flush() {
+    queueUsage(false);
     if (running || paused || stopped || Date.now() < nextTry) return;
     const id = adapter.identity(),
       link = active();
     if (!link) {
       show(
-        "Playing locally. Open this game from ChoreQuest to connect your hero.",
+        "Playing locally. Open this game from Hero Academy to connect your hero.",
       );
       return;
     }
@@ -262,9 +303,15 @@ export async function bootAcademy(adapter, platform = globalThis) {
         link.gameXP = r.gameXP;
         persist();
       }
+      while (link.activityQueue?.length) {
+        const event = link.activityQueue[0];
+        await api("/activity", link, event);
+        link.activityQueue.shift();
+        persist();
+      }
       if (adapter.identity() === id)
         show(
-          "Saved to ChoreQuest · " +
+          "Saved to Hero Academy · " +
             (link.gameXP || 0) +
             " game XP · " +
             (link.heroXP || 0) +
@@ -277,7 +324,7 @@ export async function bootAcademy(adapter, platform = globalThis) {
       } else if (e.status === 401 || e.status === 403) {
         paused = true;
         show(
-          "Connection ended. Your local save is safe. Open this game from ChoreQuest again.",
+          "Connection ended. Your local save is safe. Open this game from Hero Academy again.",
         );
       } else {
         nextTry = Date.now() + 60000;
@@ -332,6 +379,7 @@ export async function bootAcademy(adapter, platform = globalThis) {
             last: previous?.last || "",
             seen: previous?.seen || adapter.milestones().map(String),
             queue: previous?.queue || [],
+            activityQueue: previous?.activityQueue || [],
             gameXP: d.gameXP,
             heroXP: d.hero.xp,
           };
@@ -352,7 +400,7 @@ export async function bootAcademy(adapter, platform = globalThis) {
         const link = active();
         if (!link) {
           show(
-            "Saved on this device. Launch from ChoreQuest to connect your hero.",
+            "Saved on this device. Launch from Hero Academy to connect your hero.",
           );
           return;
         }
@@ -367,6 +415,12 @@ export async function bootAcademy(adapter, platform = globalThis) {
         }
       }
       paused = false;
+      playIdentity = adapter.identity();
+      playId = platform.crypto?.randomUUID?.() || "";
+      lastCompleted = adapter.milestones().length;
+      engagedMs = 0;
+      attempts = 0;
+      lastTick = Date.now();
       await flush();
     } catch (e) {
       if (active() && (!e.status || e.status >= 500)) {
@@ -385,6 +439,18 @@ export async function bootAcademy(adapter, platform = globalThis) {
     void flush();
   };
   platform.addEventListener?.("online", online);
+  const visibility = () => {
+    if (document?.visibilityState === "hidden") {
+      queueUsage(true);
+      visible = false;
+    } else {
+      visible = true;
+      lastTick = Date.now();
+    }
+  };
+  const pagehide = () => queueUsage(true);
+  document?.addEventListener?.("visibilitychange", visibility);
+  platform.addEventListener?.("pagehide", pagehide);
   return {
     flush,
     event(kind, level) {
@@ -398,11 +464,19 @@ export async function bootAcademy(adapter, platform = globalThis) {
         link.queue.push(event);
       persist();
     },
-    status: () => ({ connected, paused, pending: active()?.queue.length || 0 }),
+    // Games can report attempted challenges without revealing answers or clicks.
+    recordAttempt(count = 1) {
+      if (!Number.isInteger(count) || count < 1 || count > 100) return;
+      attempts = Math.min(100, attempts + count);
+    },
+    status: () => ({ connected, paused, pending: (active()?.queue.length || 0) + (active()?.activityQueue?.length || 0) }),
     stop() {
+      queueUsage(true);
       stopped = true;
       platform.clearInterval?.(timer);
       platform.removeEventListener?.("online", online);
+      platform.removeEventListener?.("pagehide", pagehide);
+      document?.removeEventListener?.("visibilitychange", visibility);
     },
     isConnected: () => !!active(),
   };
